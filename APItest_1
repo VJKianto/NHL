@@ -1,0 +1,59 @@
+import requests
+import pandas as pd
+
+def get_player_game_log(player_id: int, season: int, game_type: int):
+    """
+    Fetches the game log for a specific NHL player, season, and game type.
+    """
+    url = f"https://api-web.nhle.com/v1/player/{player_id}/game-log/{season}/{game_type}"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("gameLog", [])
+    else:
+        print(f"Error {response.status_code}: Failed to fetch data.")
+        return None
+
+def save_game_log_to_csv(game_logs, filename="game_log.csv"):
+    """
+    Saves selected game log fields to a CSV file using pandas.
+    """
+    if not game_logs:
+        print("No data to save.")
+        return
+
+    # Convert to DataFrame
+    df = pd.DataFrame(game_logs)
+
+    # Select useful columns
+    selected_columns = [
+        "gameDate",
+        "opponentAbbrev",
+        "homeRoadFlag",
+        "goals",
+        "assists",
+        "points",
+        "shots",
+        "plusMinus",
+        "penaltyMinutes",
+        "toi",  # time on ice
+    ]
+
+    # Filter only available columns (in case some are missing)
+    filtered_columns = [col for col in selected_columns if col in df.columns]
+    df_filtered = df[filtered_columns]
+
+    # Save to CSV
+    df_filtered.to_csv(filename, index=False)
+    print(f"Game log saved to: {filename}")
+
+# === Example Usage ===
+if __name__ == "__main__":
+    player_id = 8478402        # Example: Connor McDavid
+    season = 20232024          # Format: YYYYYYYY
+    game_type = 2              # 2 = Regular Season
+
+    logs = get_player_game_log(player_id, season, game_type)
+    if logs:
+        save_game_log_to_csv(logs, "mcdavid_2023_regular.csv")
